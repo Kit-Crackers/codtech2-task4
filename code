@@ -1,0 +1,75 @@
+# Import necessary libraries
+import pandas as pd
+import re
+import nltk
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report, accuracy_score
+import matplotlib.pyplot as plt
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
+# Download necessary NLTK resources
+nltk.download('stopwords')
+
+# Load your dataset
+df = pd.read_csv('test_data.csv')  # replace with your actual file path
+
+# Check the first few rows of the dataset
+print(df.head())
+
+# Clean the text data
+def clean_text(text):
+    # Remove URLs, special characters, and digits
+    text = re.sub(r'http\S+', '', text)  # remove URLs
+    text = re.sub(r'[^a-zA-Z\s]', '', text)  # remove special characters and digits
+    text = text.lower()  # convert to lowercase
+    return text
+
+df['cleaned_text'] = df['sentence'].apply(clean_text)
+
+# Tokenization and stopword removal
+stop_words = set(stopwords.words('english'))
+ps = PorterStemmer()
+
+def preprocess_text(text):
+    # Tokenize text and remove stopwords
+    words = text.split()
+    words = [ps.stem(word) for word in words if word not in stop_words]
+    return ' '.join(words)
+
+df['processed_text'] = df['cleaned_text'].apply(preprocess_text)
+
+# Prepare the data for model training
+X = df['processed_text']
+y = df['sentiment']  # assuming sentiment is 0 (negative) and 1 (positive)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Vectorize the text data using TF-IDF
+vectorizer = TfidfVectorizer(max_features=5000)
+X_train_vect = vectorizer.fit_transform(X_train)
+X_test_vect = vectorizer.transform(X_test)
+
+# Train a Naive Bayes model
+model = MultinomialNB()
+model.fit(X_train_vect, y_train)
+
+# Make predictions on the test set
+y_pred = model.predict(X_test_vect)
+
+# Evaluate the model
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+
+# Visualize the sentiment distribution
+sentiment_counts = df['sentiment'].value_counts()
+sentiment_counts.plot(kind='bar')
+plt.title('Sentiment Distribution')
+plt.xlabel('Sentiment')
+plt.ylabel('Count')
+plt.xticks(ticks=[0, 1], labels=['Negative', 'Positive'], rotation=0)
+plt.show()
