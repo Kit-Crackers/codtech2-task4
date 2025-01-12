@@ -14,7 +14,7 @@ from nltk.stem import PorterStemmer
 nltk.download('stopwords')
 
 # Load your dataset
-df = pd.read_csv('test_data.csv')  # replace with your actual file path
+df = pd.read_csv('test_data.csv') 
 
 # Check the first few rows of the dataset
 print(df.head())
